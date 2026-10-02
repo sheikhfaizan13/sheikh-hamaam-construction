@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum BookingStatus {
+  NEW
+  CONTACTED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MessageStatus {
+  NEW
+  READ
+  REPLIED
+  CLOSED
+}
+
+enum VisitStatus {
+  NEW
+  CONTACTED
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum PhotoType {
+  BEFORE
+  AFTER
+  PROCESS
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  fullName  String
+  phone     String    @unique
+  email     String?
+  location  String
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model BookingCounter {
+  year  Int @id
+  count Int @default(0)
+}
+
+model Booking {
+  id             String          @id @default(cuid())
+  bookingId      String          @unique
+  customerId     String
+  customer       Customer        @relation(fields: [customerId], references: [id])
+  customerName   String
+  phone          String
+  email          String?
+  location       String
+  preferredDate  DateTime
+  preferredTime  String
+  hammamType     String
+  roomSize       String
+  projectType    String
+  budget         String
+  requirements   String?
+  status         BookingStatus   @default(NEW)
+  adminNotes     String?
+  reviews        Review[]
+  photos         CustomerPhoto[]
+  project        Project?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([status])
+  @@index([phone])
+  @@index([createdAt])
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  customerName String
+  bookingId    String?
+  booking      Booking? @relation(fields: [bookingId], references: [bookingId])
+  rating       Int
+  review       String
+  approved     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([approved])
+}
+
+model CustomerPhoto {
+  id               String   @id @default(cuid())
+  bookingId        String
+  booking          Booking  @relation(fields: [bookingId], references: [bookingId])
+  customerName     String
+  phone            String
+  location         String
+  imageUrl         String
+  thumbnailUrl     String
+  caption          String?
+  approved         Boolean  @default(false)
+  showCustomerName Boolean  @default(false)
+  showLocation     Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  @@index([approved])
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  message   String
+  status    MessageStatus @default(NEW)
+  createdAt DateTime      @default(now())
+}
+
+model SiteVisitRequest {
+  id             String      @id @default(cuid())
+  name           String
+  phone          String
+  location       String
+  roomSize       String
+  projectType    String
+  preferredDate  DateTime
+  requirements   String?
+  existingPhotos String[]
+  status         VisitStatus @default(NEW)
+  adminNotes     String?
+  createdAt      DateTime    @default(now())
+}
+
+model Project {
+  id             String         @id @default(cuid())
+  slug           String         @unique
+  title          String
+  bookingId      String?        @unique
+  booking        Booking?       @relation(fields: [bookingId], references: [bookingId])
+  location       String?
+  hammamType     String
+  projectType    String
+  roomSize       String?
+  description    String
+  completionDate DateTime?
+  published      Boolean        @default(false)
+  photos         ProjectPhoto[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model ProjectPhoto {
+  id        String    @id @default(cuid())
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  imageUrl  String
+  caption   String?
+  type      PhotoType
+  createdAt DateTime  @default(now())
+}
